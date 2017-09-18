@@ -22,7 +22,7 @@ def DNN(width, height, classes, depth=1, filter_sizes=[20,800]):
     model.add(Activation("relu"))
 
     # softmax
-    model.add(Dense(classes))
+    model.add(Dense(classes), kernel_initializer="random_uniform")
     model.add(Activation("softmax"))
 
     return model
