@@ -1,53 +1,35 @@
 import numpy as np
-from keras.preprocessing import image as keras_image
-from skimage.transform import resize as skresize
+from dnn import DNN
 from keras.datasets import mnist
-import scipy.misc as misc
-from image_preprocess import elastic_transform
+from keras.utils import np_utils, to_categorical
 
-(A, _), (_, _) = mnist.load_data()
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
 mnist_original_size = 28
-A = A.reshape(A.shape[0], mnist_original_size, mnist_original_size)
-A = np.array(A[50])
-
-img = misc.toimage(A)
-#img.show()
-
-#w = 14
-#h = 29
-#A = A.astype('float32')
-#A /= 255
-#nd = skresize(A, (h, w))
-#padding = 29 - w
-#left_padding = round(padding/2)
-#right_padding = padding - left_padding
-#A = np.pad(nd, ((0,0),(left_padding, right_padding)), mode='constant')
+x_train = x_train.reshape(x_train.shape[0], mnist_original_size, mnist_original_size, 1)
+x_test = x_test.reshape(x_test.shape[0], mnist_original_size, mnist_original_size, 1)
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
 
 
-#img2 = misc.toimage(A)
-#img2.show()
+model1 = DNN(width=x_train.shape[1], height=x_train.shape[2], depth=x_train.shape[3], classes=10)
+model1.compile(loss="categorical_crossentropy", optimizer='adadelta', metrics=["accuracy"])
+model1.fit(x_train, y_train, nb_epoch=5, verbose=1)
 
-k = keras_image.ImageDataGenerator(featurewise_std_normalization=True,
-                                    rotation_range=7.5,
-                                    shear_range=0.130875,
-                                    zoom_range=0.15,
-                                    preprocessing_function=elastic_transform)
-A = A.reshape(1,28,28,1)
-k.fit(A)
-flag = 0
-xx = []
-for x,y in k.flow(A,[0]):
-    if flag == 10:
-        break
-    flag += 1
-    img3 = misc.toimage(x[0,:,:,0])
-    img3.show()
-    xx.append(x)
-
-for i in range(len(xx)-1):
-    for j in range(i+1,len(xx)):
-        if np.array_equal(xx[i],xx[j]):
-            print("%d = %d"%(i,j))
+loss, accuracy = model1.evaluate(x_test, y_test, verbose=1)
+print('\nloss: {:.2f}%, accuracy: {:.2f}%'.format(loss*100, accuracy*100))
     
+m1 = model1.predict_proba(x_test)
 
 
+
+model2 = DNN(width=x_train.shape[1], height=x_train.shape[2], depth=x_train.shape[3], classes=10)
+model2.compile(loss="categorical_crossentropy", optimizer='adadelta', metrics=["accuracy"])
+model2.fit(x_train, y_train, nb_epoch=5, verbose=1)
+
+loss, accuracy = model2.evaluate(x_test, y_test, verbose=1)
+print('\nloss: {:.2f}%, accuracy: {:.2f}%'.format(loss*100, accuracy*100))
+    
+m2 = model2.predict_proba(x_test)
+
+print("m1=m2...?")
+print(np.equal(m1,m2))

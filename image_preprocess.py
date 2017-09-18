@@ -21,7 +21,7 @@ def width_normalize(dataset, reshape_sizes, output_size):
                 nd = np.pad(nd, ((0,output_size-dataset.shape[1]),(left_padding, right_padding)), mode='constant')
             
             new_dataset.append(nd.reshape(output_size, output_size, 1))
-        output_dataset[this_shape] = dataset
+        output_dataset[w] = dataset
     return output_dataset
 
 def elastic_transform(image, alpha=37.0, sigma=5.5, random_state=None):
