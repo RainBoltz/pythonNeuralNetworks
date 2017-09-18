@@ -1,6 +1,5 @@
 from keras.datasets import mnist
 from keras.utils import np_utils, to_categorical
-from keras.preprocessing import image as keras_image
 from sys import argv
 from image_preprocess import width_normalize
 from mcdnn import MCDNN
