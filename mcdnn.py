@@ -2,7 +2,12 @@ from dnn import DNN
 from keras.preprocessing import image as keras_image
 from keras.models import load_model
 from image_preprocess import elastic_transform
+from tqdm import tqdm, trange
+from heapq import nlargest
 import os, errno
+import numpy as np
+import scipy.misc as sm
+import time
 
 class MCDNN:
     def __init__(self, train_datasets, y_train):
@@ -35,7 +40,7 @@ class MCDNN:
             
             #from paper, if use SGD(lr=1e-3), we can let epoch size as N, 0.001*0.993^N=0.00003, thus N = 827
             self.dnns[w_id][m].fit_generator(image_generator.flow(x_train, y_train, batch_size=128), 
-                                steps_per_epoch=round(x_train.shape[0] / 128), nb_epoch=25, verbose=1)
+                                steps_per_epoch=round(x_train.shape[0] / 128), epochs=25, verbose=1)
 
             print("[INFO] evaluating model-W%d..."%(m))
             (loss, accuracy) = self.dnns[w_id][m].evaluate(x_test, y_test, batch_size=128, verbose=1)
@@ -76,20 +81,44 @@ class MCDNN:
         
         
     def total_evaluation(self, x_test, y_test):
+        print("[INFO] START FINAL EVALUATION...")
+        for w in self.Ws:
+            total_acc = 0.0
+            total_loss = 0.0
+            n = len(self.dnns[w])
+            for i in range(n):
+                (loss, accuracy) = self.dnns[w][i].evaluate(x_test, y_test, batch_size=128, verbose=0)
+                total_acc += accuracy
+                total_loss += loss
+            print("\n[INFO] W{} averages -> loss: {:.4f}, accuracy: {:.3f}%".format(w ,loss / n, total_acc * 100 / n))
+        print("----------")
+        
         _i,_j = np.array(y_test).shape
         total_n = _i
         all_proba = np.zeros((_i, _j))
-        for w in self.Ws:
-            for i in range(len(self.dnns[w])):
-                proba = self.dnns[w][i].predict_proba(x_test)
+        for w in tqdm(self.Ws):
+            for i in trange(len(self.dnns[w])):
+                proba = self.dnns[w][i].predict(x_test)
                 all_proba = np.add(all_proba, proba)
-        correct_n = 0
-        for n in all_proba.shape[0]:
-            pred_ans, _ = max(enumerate(all_proba[n]), key=lambda p: p[1])
-            verify_ans, _ = max(enumerate(y_test[n]), key=lambda p: p[1])
-            if pred_ans==verify_ans:
-                correct += 1
         
-        print("total: {}, corrects: {}, error-ratio: {:.3f%}".format(total_n, correct_n, (total_n-correct_n)*100/total_n))
+        try:
+            os.makedirs('WA')
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        correct_n = 0
+        for n in trange(all_proba.shape[0]):
+            pred_ans, p2, p3 =  nlargest(3,enumerate(all_proba[n]),key=lambda x: x[1])
+            verify_ans, _ = max(enumerate(y_test[n]), key=lambda x: x[1])
+            if pred_ans[0]==verify_ans:
+                correct_n += 1
+            else:
+                #print('wrong answer for #%d, answer: %d, predicted: %d'%(n,verify_ans,pred_ans), end='')
+                img = sm.toimage(x_test[n,:,:,0])
+                img.save('WA/A%d_P%d-%d-%d.png'%(verify_ans,pred_ans[0],p2[0],p3[0]))
+                time.sleep(3)
+        
+        print("total: {}, corrects: {}\n\ncorrect-ratio: {:.3f}%, error-ratio: {:.3f}%"\
+            .format(total_n, correct_n, correct_n*100/total_n, (total_n-correct_n)*100/total_n))
         
         
