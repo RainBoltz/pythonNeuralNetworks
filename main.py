@@ -1,5 +1,5 @@
 from keras.datasets import mnist
-from keras.utils import np_utils, to_categorical
+from keras.utils import to_categorical
 from sys import argv
 from image_preprocess import width_normalize
 from mcdnn import MCDNN
@@ -54,7 +54,7 @@ def main():
     MultiColumnDNN.train_all()
     MultiColumnDNN.output_weights()
     #-
-    MultiColumnDNN.total_evaluation(x_test, y_test)
+    MultiColumnDNN.total_evaluation(test_datasets[28], y_test)
     
 if __name__=="__main__":
     main()
