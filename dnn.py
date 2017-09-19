@@ -1,7 +1,7 @@
 from keras.models import Sequential
 from keras.initializers import RandomUniform
-from keras.layers.convolutional import Conv2D, MaxPooling2D
-from keras.layers.core import Activation, Flatten, Dense
+from keras.layers import Conv2D, MaxPooling2D
+from keras.layers import Activation, Flatten, Dense
 
 def DNN(width, height, classes, depth=1, filter_sizes=[20,800]):
     model = Sequential()
@@ -19,7 +19,7 @@ def DNN(width, height, classes, depth=1, filter_sizes=[20,800]):
 
     # FC => RELU layers
     model.add(Flatten())
-    model.add(Dense(150, kernel_initializer=RandomUniform(minval=-0.05, maxval=0.05, seed=None)))
+    model.add(Dense(150))
     model.add(Activation("relu"))
 
     # softmax
