@@ -13,7 +13,7 @@ y_test = to_categorical(y_test, 10)
 
 model1 = DNN(width=x_train.shape[1], height=x_train.shape[2], depth=x_train.shape[3], classes=10)
 model1.compile(loss="categorical_crossentropy", optimizer='adadelta', metrics=["accuracy"])
-model1.fit(x_train, y_train, nb_epoch=5, verbose=1)
+model1.fit(x_train, y_train, epochs=1, verbose=1)
 
 loss, accuracy = model1.evaluate(x_test, y_test, verbose=1)
 print('\nloss: {:.2f}%, accuracy: {:.2f}%'.format(loss*100, accuracy*100))
@@ -24,7 +24,7 @@ m1 = model1.predict_proba(x_test)
 
 model2 = DNN(width=x_train.shape[1], height=x_train.shape[2], depth=x_train.shape[3], classes=10)
 model2.compile(loss="categorical_crossentropy", optimizer='adadelta', metrics=["accuracy"])
-model2.fit(x_train, y_train, nb_epoch=5, verbose=1)
+model2.fit(x_train, y_train, nb_epoch=1, verbose=1)
 
 loss, accuracy = model2.evaluate(x_test, y_test, verbose=1)
 print('\nloss: {:.2f}%, accuracy: {:.2f}%'.format(loss*100, accuracy*100))
