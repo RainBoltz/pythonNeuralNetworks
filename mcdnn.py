@@ -4,6 +4,8 @@ from keras.models import load_model
 from image_preprocess import elastic_transform
 from tqdm import tqdm, trange
 from heapq import nlargest
+from keras.callbacks import TensorBoard
+from keras.optimizers import SGD, Adadelta
 import os, errno
 import numpy as np
 import scipy.misc as sm
@@ -22,7 +24,7 @@ class MCDNN:
             self.dnns[w] = []
             for i in range(columns):
                 model = DNN(width=x_train.shape[1], height=x_train.shape[2], depth=x_train.shape[3], classes=10) 
-                model.compile(loss="categorical_crossentropy", optimizer='adadelta', metrics=["accuracy"])
+                model.compile(loss="categorical_crossentropy", optimizer=Adadelta(), metrics=["accuracy"])
                 self.dnns[w].append(model)
     
     def train_specific(self, w_id):
@@ -32,26 +34,44 @@ class MCDNN:
         for m in range(len(self.dnns[w_id])):
             print("[INFO] compiling model-W%d-%d..."%(w_id, m))
             image_generator = keras_image.ImageDataGenerator(featurewise_std_normalization=True,
-                                                            rotation_range=7.5, #7.5~15.0 degrees
-                                                            shear_range=0.130875, #7.5 degrees = 0.130875 radians
-                                                            zoom_range=0.15, # y=[15,20], resize_ratio=[1-zoom_range, 1+zoom_range], zoom_range=y/100
+                                                            rotation_range=11.25, #7.5~15.0 degrees
+                                                            shear_range=0.196349541, #11.25 degrees = 0.196349541 radians
+                                                            zoom_range=0.175, # y=[15,20], resize_ratio=[1-zoom_range, 1+zoom_range], zoom_range=y/100
                                                             preprocessing_function=elastic_transform)
             image_generator.fit(x_train)
             
-            #from paper, if use SGD(lr=1e-3), we can let epoch size as N, 0.001*0.993^N=0.00003, thus N = 827
+            # from paper, if use SGD(lr=1e-3, decay=1e-5)
+            # we can let epoch size as N, 0.001*0.993^N=0.00003, thus N = 827
+            this_log_path = 'logs/W'+str(w_id)+'/'+str(m)
+            try:
+                os.makedirs(this_log_path)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
+            tbCallBack = TensorBoard(log_dir='./'+this_log_path, histogram_freq=0, write_graph=True, write_images=True)
             self.dnns[w_id][m].fit_generator(image_generator.flow(x_train, y_train, batch_size=128), 
-                                steps_per_epoch=round(x_train.shape[0] / 128), epochs=25, verbose=1)
+                                steps_per_epoch=round(x_train.shape[0] / 128), epochs=100, verbose=1, callbacks=[tbCallBack])
 
             print("[INFO] evaluating model-W%d..."%(m))
             (loss, accuracy) = self.dnns[w_id][m].evaluate(x_test, y_test, batch_size=128, verbose=1)
             print("\n[INFO]loss: {:.2f}%, accuracy: {:.2f}%".format(loss * 100, accuracy * 100))
         
     def train_all(self):
+        try:
+            os.makedirs('logs')
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
         for w in self.Ws:
+            try:
+                os.makedirs('logs/W'+str(w))
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
             self.train_specific(w)
         print("[INFO] DONE TRAININGS!")
             
-    def output_weights(self):
+    def output_all(self):
         root_dir = "columns"
         try:
             os.makedirs(root_dir)
