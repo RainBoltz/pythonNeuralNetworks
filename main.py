@@ -52,7 +52,7 @@ def main():
     #- 
     MultiColumnDNN.create_columns()
     MultiColumnDNN.train_all()
-    MultiColumnDNN.output_weights()
+    MultiColumnDNN.output_all()
     #-
     MultiColumnDNN.total_evaluation(test_datasets[28], y_test)
     
